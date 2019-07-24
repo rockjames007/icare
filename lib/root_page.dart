@@ -47,7 +47,7 @@ class _RootPageState extends State<RootPage> {
           onSignedIn: () => _updateAuthStatus(AuthStatus.signedIn),
         );
       case AuthStatus.signedIn:
-        return new Menu(0);
+        return new Menu();
     }
   }
   Widget _buildWaitingScreen() {

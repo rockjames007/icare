@@ -3,10 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:icare/auth.dart';
 import 'package:icare/root_page.dart';
 void main() {
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown
-  ]);
   runApp(mainPage());
 }
 class mainPage extends StatelessWidget
