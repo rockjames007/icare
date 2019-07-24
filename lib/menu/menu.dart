@@ -6,14 +6,14 @@ class Menu extends StatefulWidget {
   State<StatefulWidget> createState() => _MenuPageState();
 }
 
-int _currentIndex = 0;
+int _currentIndex=0;
 
 class _MenuPageState extends State<Menu> {
   @override
   Widget build(BuildContext context) {
     int count;
     if (MediaQuery.of(context).orientation == Orientation.landscape)
-      count = 4;
+      count = 3;
     else
       count = 2;
     return Scaffold(
@@ -34,6 +34,7 @@ class _MenuPageState extends State<Menu> {
           type: BottomNavigationBarType.fixed, // new
           onTap: onTabTapped, // new
           currentIndex: _currentIndex,
+          selectedItemColor: Colors.black,
           items: [
             BottomNavigationBarItem(
               icon: new Icon(Icons.settings),
@@ -50,7 +51,7 @@ class _MenuPageState extends State<Menu> {
               ),
             ),
             BottomNavigationBarItem(
-                icon: Icon(Icons.info),
+                icon: Icon(Icons.account_circle),
                 title: Text(
                   'Personal Info',
                   textScaleFactor: 0.5,
@@ -75,11 +76,12 @@ class CardItem {
 }
 
 final _cardItemList = [
-  CardItem("Mood", Icons.mood, Colors.redAccent),
-  CardItem("Mood", Icons.mood, Colors.redAccent),
-  CardItem("Mood", Icons.mood, Colors.redAccent),
-  CardItem("Mood", Icons.mood, Colors.redAccent),
-  CardItem("Mood", Icons.mood, Colors.redAccent),
+  CardItem("Sleep", Icons.airline_seat_flat, Color.fromRGBO(244, 236, 247 ,1.0)),
+  CardItem("Hydrate", Icons.opacity, Color.fromRGBO(249, 235, 234 , 1.0)),
+  CardItem("Medical", Icons.favorite, Color.fromRGBO(253, 237, 236, 1.0)),
+  CardItem("Calorie Intake", Icons.fastfood, Color.fromRGBO(163, 228, 215  , 1.0)),
+  CardItem("Health Tips", Icons.check, Color.fromRGBO(178, 235, 242, 1.0)),
+  CardItem("Fun", Icons.mood, Color.fromRGBO(218, 247, 166, 1.0)),
 ];
 
 List<Card> cardList() {
@@ -95,7 +97,13 @@ Widget cardBuilder(Color color, String label, IconData icon) {
   return Card(
     color: color,
     child: Container(
-      child: Icon(icon),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(icon),
+          Text(label)
+        ],
+      )
     ),
   );
 }
