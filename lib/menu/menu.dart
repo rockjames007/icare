@@ -77,6 +77,7 @@ class _MenuPageState extends State<Menu> {
     });
   }
 
+ @override
   Widget cardBuilder(Color color, String label, IconData icon,_menuItem) {
     return InkWell(
       child: Card(
@@ -98,7 +99,7 @@ class _MenuPageState extends State<Menu> {
     CardItem(
         "Calorie Intake", Icons.fastfood, Color.fromRGBO(163, 228, 215, 1.0)),
     CardItem("Health Tips", Icons.check, Color.fromRGBO(178, 235, 242, 1.0)),
-    CardItem("Fun", Icons.mood, Color.fromRGBO(218, 247, 166, 1.0)),
+    CardItem("Make Me Laugh", Icons.mood, Color.fromRGBO(218, 247, 166, 1.0)),
   ];
   final _menuItem=[SleepTracker(),HydrateTracker(),MedicalTracker(),CalorieIntake(),HealthTipInfo(),FunActivity()];
   List<InkWell> cardList() {
