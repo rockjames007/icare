@@ -11,14 +11,12 @@ Future<Post> fetchPost() async {
     return Post.fromJson(json.decode(response.body));
   } else {
     // If that call was not successful, throw an error.
-    throw Exception('Failed to load post');
+    throw Exception('Check your Internet');
   }
 }
 class Post {
-  final String joke;
-
+  String joke;
   Post({this.joke});
-
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
       joke: json['joke'],
@@ -26,44 +24,8 @@ class Post {
   }
 }
 
-void main() => runApp(PayStatement());
-
-class PayStatement extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: FutureBuilder<Post>(
-          future: fetchPost(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Text(snapshot.data.joke,style: TextStyle(color: Colors.red),);
-            } else if (snapshot.hasError) {
-              return Text("${snapshot.error}");
-            }
-
-            // By default, show a loading spinner
-            return CircularProgressIndicator();
-          },
-        ),
-      ),
-    );
-  }
-}
-
-
-
-final List<CardViewModel> demoCards = [
-  new CardViewModel(
-    joke:"hello"
-  ),
-  new CardViewModel(
-      joke:"hamma"
-  )
-];
-
 class CardViewModel {
-  final String joke;
+ String joke;
   CardViewModel({
     this.joke
   });

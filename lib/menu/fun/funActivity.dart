@@ -1,17 +1,34 @@
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
-
+import 'dart:async';
 import 'package:icare/menu/fun/card_data.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 
+final List<CardViewModel> demoCards = [];
 class FunActivity extends StatefulWidget {
   @override
   _FunActivityState createState() => new _FunActivityState();
 }
+Future sleep1() {
+  return new Future.delayed(const Duration(seconds: 1), () => "1");
+}
+Future<Post> getProjectDetails() async {
+    Post pt = await fetchPost();
+    CardViewModel cardViewModel = new CardViewModel();
+    cardViewModel.joke= pt.joke;
+    demoCards.add(cardViewModel);
+}
 
 class _FunActivityState extends State<FunActivity> {
   double scrollPercent = 0.0;
-
+  @override
+  void initState() {
+    super.initState();
+    demoCards.clear();
+    for(int i=0;i<4;i++)
+      getProjectDetails();
+  }
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -27,13 +44,31 @@ class _FunActivityState extends State<FunActivity> {
           ),
 
           // Cards
-          new Expanded(
-            child: new CardFlipper(
-                cards: demoCards,
-                onScroll: (double scrollPercent) {
-                  setState(() => this.scrollPercent = scrollPercent);
-                }),
-          ),
+          new FutureBuilder<Post>( future: fetchPost(),
+              builder: (context, snapshot) {
+               if (snapshot.hasData) {
+                  return  new Expanded(
+                    child: new CardFlipper(
+                        cards: demoCards,
+                        onScroll: (double scrollPercent) {
+                          setState(() {
+                            this.scrollPercent = scrollPercent;
+                            if(scrollPercent>0.6) {
+                              Navigator.pop(context);
+                              sleep1();
+                              Navigator.push(context, MaterialPageRoute(
+                                  builder: (context) => FunActivity()));
+                            }
+                          });
+                        }),
+                  );
+                } else if (snapshot.hasError) {
+                  return Text("${snapshot.error}");
+                }
+                // By default, show a loading spinner
+                return CircularProgressIndicator();
+              }),
+
 
           // Scroll Indicator
           new BottomBar(
@@ -45,7 +80,6 @@ class _FunActivityState extends State<FunActivity> {
     );
   }
 }
-
 class CardFlipper extends StatefulWidget {
   final List<CardViewModel> cards;
   final Function onScroll;
@@ -59,7 +93,8 @@ class CardFlipper extends StatefulWidget {
   _CardFlipperState createState() => new _CardFlipperState();
 }
 
-class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin {
+class _CardFlipperState extends State<CardFlipper>
+    with TickerProviderStateMixin {
   double scrollPercent = 0.0;
   Offset startDrag;
   double startDragPercentScroll;
@@ -77,8 +112,8 @@ class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin
     )
       ..addListener(() {
         setState(() {
-          scrollPercent =
-              lerpDouble(finishScrollStart, finishScrollEnd, finishScrollController.value);
+          scrollPercent = lerpDouble(
+              finishScrollStart, finishScrollEnd, finishScrollController.value);
 
           if (widget.onScroll != null) {
             widget.onScroll(scrollPercent);
@@ -97,9 +132,9 @@ class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin
     final currDrag = details.globalPosition;
     final dragDistance = currDrag.dx - startDrag.dx;
     final singleCardDragPercent = dragDistance / context.size.width;
-
     setState(() {
-      scrollPercent = (startDragPercentScroll + (-singleCardDragPercent / widget.cards.length))
+      scrollPercent = (startDragPercentScroll +
+              (-singleCardDragPercent / widget.cards.length))
           .clamp(0.0, 1.0 - (1 / widget.cards.length));
       print('percentScroll: $scrollPercent');
 
@@ -111,9 +146,9 @@ class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin
 
   void _onPanEnd(DragEndDetails details) {
     finishScrollStart = scrollPercent;
-    finishScrollEnd = (scrollPercent * widget.cards.length).round() / widget.cards.length;
+    finishScrollEnd =
+        (scrollPercent * widget.cards.length).round() / widget.cards.length;
     finishScrollController.forward(from: 0.0);
-
     setState(() {
       startDrag = null;
       startDragPercentScroll = null;
@@ -162,20 +197,23 @@ class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin
     final rotationPointMultiplier = angle > 0.0 ? angle / angle.abs() : 1.0;
     print('Angle: $angle');
     projection *= new Matrix4.translationValues(
-        horizontalTranslation + (rotationPointMultiplier * 300.0), 0.0, 0.0) *
+            horizontalTranslation + (rotationPointMultiplier * 300.0),
+            0.0,
+            0.0) *
         new Matrix4.rotationY(angle) *
         new Matrix4.translationValues(0.0, 0.0, radius) *
-        new Matrix4.translationValues(-rotationPointMultiplier * 300.0, 0.0, 0.0);
+        new Matrix4.translationValues(
+            -rotationPointMultiplier * 300.0, 0.0, 0.0);
 
     return projection;
   }
 
   Widget _buildCard(
-      CardViewModel viewModel,
-      int cardIndex,
-      int cardCount,
-      double scrollPercent,
-      ) {
+    CardViewModel viewModel,
+    int cardIndex,
+    int cardCount,
+    double scrollPercent,
+  ) {
     final cardScrollPercent = scrollPercent / (1 / cardCount);
     final parallax = scrollPercent - (cardIndex / widget.cards.length);
 
@@ -210,7 +248,8 @@ class _CardFlipperState extends State<CardFlipper> with TickerProviderStateMixin
 
 class CardModified extends StatelessWidget {
   final CardViewModel viewModel;
-  final double parallaxPercent; // [0.0, 1.0] (0.0 for all the way right, 1.0 for all the way left)
+  final double
+      parallaxPercent; // [0.0, 1.0] (0.0 for all the way right, 1.0 for all the way left)
 
   CardModified({
     this.viewModel,
@@ -223,11 +262,15 @@ class CardModified extends StatelessWidget {
       fit: StackFit.expand,
       children: <Widget>[
         new Card(
-          child: new Text('${viewModel.joke}',style: TextStyle(color: Colors.white),),
+          child: Center(
+            child: Text(
+              '${viewModel.joke}',
+              style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold,fontStyle: FontStyle.italic,fontSize: 30.0),
+            ),
+          ),
         ),
-
-          ],
-        );
+      ],
+    );
   }
 }
 
@@ -251,7 +294,7 @@ class BottomBar extends StatelessWidget {
             new Expanded(
               child: new Center(
                 child: new Icon(
-                  Icons.settings,
+                  Icons.fast_rewind,
                   color: Colors.white,
                 ),
               ),
@@ -271,7 +314,7 @@ class BottomBar extends StatelessWidget {
             new Expanded(
               child: new Center(
                 child: new Icon(
-                  Icons.add,
+                  Icons.fast_forward,
                   color: Colors.white,
                 ),
               ),
@@ -286,7 +329,6 @@ class BottomBar extends StatelessWidget {
 class ScrollIndicator extends StatelessWidget {
   final int cardCount;
   final double scrollPercent;
-
   ScrollIndicator({
     this.cardCount,
     this.scrollPercent,
@@ -314,8 +356,8 @@ class ScrollIndicatorPainter extends CustomPainter {
     this.cardCount,
     this.scrollPercent,
   })  : trackPaint = new Paint()
-    ..color = const Color(0xFF444444)
-    ..style = PaintingStyle.fill,
+          ..color = const Color(0xFF444444)
+          ..style = PaintingStyle.fill,
         thumbPaint = new Paint()
           ..color = Colors.white
           ..style = PaintingStyle.fill;
