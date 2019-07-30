@@ -1,66 +1,405 @@
+import 'dart:math';
+import 'dart:ui' show lerpDouble;
+import 'package:icare/menu/healthtips/card_data.dart';
 import 'package:flutter/material.dart';
-import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
-import 'package:intl/intl.dart';
+
 class HealthTipInfo extends StatefulWidget {
   @override
-  _HealthTipInfoState createState() => _HealthTipInfoState();
+  _HealthTipInfoState createState() => new _HealthTipInfoState();
 }
 
 class _HealthTipInfoState extends State<HealthTipInfo> {
-  final format = DateFormat("HH:mm");
+  double scrollPercent = 0.0;
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color.fromRGBO(244, 236, 247, 1.0),
-      body: CustomScrollView(
-        slivers: <Widget>[
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 150.0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Health Tips',
-                style: TextStyle(color: Colors.black),
-              ),
-              background: Image.asset(
-                "assets/health.jpg",
-                fit: BoxFit.fitWidth,
-              ),
-            ),
-            iconTheme: IconThemeData(color: Colors.black),
+    return new Scaffold(
+      appBar: AppBar(),
+      backgroundColor: Colors.black,
+      body: new Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Spacer for status barCard
+          new Container(
+            width: double.infinity,
+            height: 20.0,
           ),
-          SliverFillRemaining(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: <Widget>[
-                    Card(
-                      color: Color.fromRGBO(178, 235, 242, 1.0),
-                      child: ListTile(
-                        title: Text("Bed Time"),
-                        subtitle: Text(
-                          "0:18 min", style: TextStyle(fontSize: 20.0),),
-                      ),
-                    ),
-                    Card(
-                        color: Color.fromRGBO(178, 235, 242, 1.0),
-                        child: ListTile(
-                          title: Text("Sleep Time"),
-                          subtitle: DateTimeField(
-                            format: format,
-                            onShowPicker: (context, currentValue) async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-                              );
-                              return DateTimeField.convert(time);
-                            },
-                          ),
-                        )
-                    )],
-                ),
-              ))
+
+          // Cards
+          new Expanded(
+            child: new CardFlipper(
+                cards: demoCards,
+                onScroll: (double scrollPercent) {
+                  setState(() => this.scrollPercent = scrollPercent);
+                }),
+          ),
+
+          // Scroll Indicator
+          new BottomBar(
+            cardCount: demoCards.length,
+            scrollPercent: scrollPercent,
+          ),
         ],
       ),
     );
+  }
+}
+
+class CardFlipper extends StatefulWidget {
+  final List<MedicalInfoCard> cards;
+  final Function onScroll;
+
+  CardFlipper({
+    this.cards,
+    this.onScroll,
+  });
+
+  @override
+  _CardFlipperState createState() => new _CardFlipperState();
+}
+
+class _CardFlipperState extends State<CardFlipper>
+    with TickerProviderStateMixin {
+  double scrollPercent = 0.0;
+  Offset startDrag;
+  double startDragPercentScroll;
+  double finishScrollStart;
+  double finishScrollEnd;
+  AnimationController finishScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    finishScrollController = new AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    )
+      ..addListener(() {
+        setState(() {
+          scrollPercent = lerpDouble(
+              finishScrollStart, finishScrollEnd, finishScrollController.value);
+
+          if (widget.onScroll != null) {
+            widget.onScroll(scrollPercent);
+          }
+        });
+      })
+      ..addStatusListener((AnimationStatus status) {});
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    startDrag = details.globalPosition;
+    startDragPercentScroll = scrollPercent;
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    final currDrag = details.globalPosition;
+    final dragDistance = currDrag.dx - startDrag.dx;
+    final singleCardDragPercent = dragDistance / context.size.width;
+
+    setState(() {
+      scrollPercent = (startDragPercentScroll +
+              (-singleCardDragPercent / widget.cards.length))
+          .clamp(0.0, 1.0 - (1 / widget.cards.length));
+      print('percentScroll: $scrollPercent');
+
+      if (widget.onScroll != null) {
+        widget.onScroll(scrollPercent);
+      }
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    finishScrollStart = scrollPercent;
+    finishScrollEnd =
+        (scrollPercent * widget.cards.length).round() / widget.cards.length;
+    finishScrollController.forward(from: 0.0);
+
+    setState(() {
+      startDrag = null;
+      startDragPercentScroll = null;
+    });
+  }
+
+  List<Widget> _buildCards() {
+    int index = -1;
+    return widget.cards.map((MedicalInfoCard viewModel) {
+      ++index;
+      return _buildCard(viewModel, index, widget.cards.length, scrollPercent);
+    }).toList();
+  }
+
+  Matrix4 _buildCardProjection(double scrollPercent) {
+    // Pre-multiplied matrix of a projection matrix and a view matrix.
+    //
+    // Projection matrix is a simplified perspective matrix
+    // http://web.iitd.ac.in/~hegde/cad/lecture/L9_persproj.pdf
+    // in the form of
+    // [[1.0, 0.0, 0.0, 0.0],
+    //  [0.0, 1.0, 0.0, 0.0],
+    //  [0.0, 0.0, 1.0, 0.0],
+    //  [0.0, 0.0, -perspective, 1.0]]
+    //
+    // View matrix is a simplified camera view matrix.
+    // Basically re-scales to keep object at original size at angle = 0 at
+    // any radius in the form of
+    // [[1.0, 0.0, 0.0, 0.0],
+    //  [0.0, 1.0, 0.0, 0.0],
+    //  [0.0, 0.0, 1.0, -radius],
+    //  [0.0, 0.0, 0.0, 1.0]]
+    final perspective = 0.002;
+    final radius = 1.0;
+    final angle = scrollPercent * pi / 8;
+    final horizontalTranslation = 0.0;
+    Matrix4 projection = new Matrix4.identity()
+      ..setEntry(0, 0, 1 / radius)
+      ..setEntry(1, 1, 1 / radius)
+      ..setEntry(3, 2, -perspective)
+      ..setEntry(2, 3, -radius)
+      ..setEntry(3, 3, perspective * radius + 1.0);
+
+    // Model matrix by first translating the object from the origin of the world
+    // by radius in the z axis and then rotating against the world.
+    final rotationPointMultiplier = angle > 0.0 ? angle / angle.abs() : 1.0;
+    print('Angle: $angle');
+    projection *= new Matrix4.translationValues(
+            horizontalTranslation + (rotationPointMultiplier * 300.0),
+            0.0,
+            0.0) *
+        new Matrix4.rotationY(angle) *
+        new Matrix4.translationValues(0.0, 0.0, radius) *
+        new Matrix4.translationValues(
+            -rotationPointMultiplier * 300.0, 0.0, 0.0);
+
+    return projection;
+  }
+
+  Widget _buildCard(
+    MedicalInfoCard viewModel,
+    int cardIndex,
+    int cardCount,
+    double scrollPercent,
+  ) {
+    final cardScrollPercent = scrollPercent / (1 / cardCount);
+    final parallax = scrollPercent - (cardIndex / widget.cards.length);
+
+    return new FractionalTranslation(
+      translation: new Offset(cardIndex - cardScrollPercent, 0.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: new Transform(
+          transform: _buildCardProjection(cardScrollPercent - cardIndex),
+          child: new MedCard(
+            viewModel: viewModel,
+            parallaxPercent: parallax,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onHorizontalDragStart: _onPanStart,
+      onHorizontalDragUpdate: _onPanUpdate,
+      onHorizontalDragEnd: _onPanEnd,
+      behavior: HitTestBehavior.translucent,
+      child: Stack(
+        children: _buildCards(),
+      ),
+    );
+  }
+}
+
+class MedCard extends StatelessWidget {
+  final MedicalInfoCard viewModel;
+  final double
+      parallaxPercent; // [0.0, 1.0] (0.0 for all the way right, 1.0 for all the way left)
+
+  MedCard({
+    this.viewModel,
+    this.parallaxPercent = 0.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return new Stack(
+      fit: StackFit.expand,
+      children: <Widget>[
+        new Card(
+          child: SingleChildScrollView(
+            child: Center(
+              child: Column(
+                children: <Widget>[
+                  Text(
+                    '${viewModel.header}',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 30.0),
+                  ),
+                  Divider(),
+                  ListTile(
+                    title: Text(
+                      '${viewModel.description}',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 20.0,
+                          wordSpacing: 10.0,
+                          height: 2.0),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class BottomBar extends StatelessWidget {
+  final int cardCount;
+  final double scrollPercent;
+
+  BottomBar({
+    this.cardCount,
+    this.scrollPercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return new Container(
+      width: double.infinity,
+      child: new Padding(
+        padding: const EdgeInsets.only(top: 15.0, bottom: 15.0),
+        child: new Row(
+          children: <Widget>[
+            new Expanded(
+              child: new Center(
+                child: new Icon(
+                  Icons.fast_rewind,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            new Expanded(
+              child: new Center(
+                child: new Container(
+                  width: double.infinity,
+                  height: 5.0,
+                  child: new ScrollIndicator(
+                    cardCount: cardCount,
+                    scrollPercent: scrollPercent,
+                  ),
+                ),
+              ),
+            ),
+            new Expanded(
+              child: new Center(
+                child: new Icon(
+                  Icons.fast_forward,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ScrollIndicator extends StatelessWidget {
+  final int cardCount;
+  final double scrollPercent;
+
+  ScrollIndicator({
+    this.cardCount,
+    this.scrollPercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return new CustomPaint(
+      painter: new ScrollIndicatorPainter(
+        cardCount: cardCount,
+        scrollPercent: scrollPercent,
+      ),
+      child: new Container(),
+    );
+  }
+}
+
+class ScrollIndicatorPainter extends CustomPainter {
+  final int cardCount;
+  final double scrollPercent;
+  final Paint trackPaint;
+  final Paint thumbPaint;
+
+  ScrollIndicatorPainter({
+    this.cardCount,
+    this.scrollPercent,
+  })  : trackPaint = new Paint()
+          ..color = const Color(0xFF444444)
+          ..style = PaintingStyle.fill,
+        thumbPaint = new Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.fill;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Draw track
+    canvas.drawRRect(
+      new RRect.fromRectAndCorners(
+        new Rect.fromLTWH(
+          0.0,
+          0.0,
+          size.width,
+          size.height,
+        ),
+        topLeft: new Radius.circular(3.0),
+        topRight: new Radius.circular(3.0),
+        bottomLeft: new Radius.circular(3.0),
+        bottomRight: new Radius.circular(3.0),
+      ),
+      trackPaint,
+    );
+
+    // Draw thumb
+    final thumbWidth = size.width / cardCount;
+    final thumbLeft = scrollPercent * size.width;
+
+    Path thumbPath = new Path();
+    thumbPath.addRRect(
+      new RRect.fromRectAndCorners(
+        new Rect.fromLTWH(
+          thumbLeft,
+          0.0,
+          thumbWidth,
+          size.height,
+        ),
+        topLeft: new Radius.circular(3.0),
+        topRight: new Radius.circular(3.0),
+        bottomLeft: new Radius.circular(3.0),
+        bottomRight: new Radius.circular(3.0),
+      ),
+    );
+
+    // Thumb shape
+    canvas.drawPath(
+      thumbPath,
+      thumbPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
   }
 }

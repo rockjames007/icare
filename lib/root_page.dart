@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:icare/auth.dart';
 import 'package:icare/login/loginpage.dart';
-import 'package:icare/menu/menu.dart';
+import 'package:icare/personalDetailRequired.dart';
 
 
 class RootPage extends StatefulWidget {
@@ -47,7 +47,7 @@ class _RootPageState extends State<RootPage> {
           onSignedIn: () => _updateAuthStatus(AuthStatus.signedIn),
         );
       case AuthStatus.signedIn:
-        return new Menu();
+        return new PersonalDataRequired();
     }
   }
   Widget _buildWaitingScreen() {

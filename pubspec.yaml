@@ -29,6 +29,7 @@ dependencies:
   cloud_firestore: ^0.8.2+3
   firebase_storage: 1.0.4
   image_picker: 0.4.12+1
+  shared_preferences: ^0.4.3
 
 dev_dependencies:
   flutter_test:
@@ -56,8 +57,6 @@ flutter:
     - assets/sleepcat.jpg
     - assets/medical.jpg
     - assets/calorie.jpg
-    - assets/health.jpg
-    - assets/fun.jpg
     - assets/hydrate.jpg
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.io/assets-and-images/#resolution-aware.

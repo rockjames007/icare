@@ -3,32 +3,35 @@ import 'dart:ui' show lerpDouble;
 import 'dart:async';
 import 'package:icare/menu/fun/card_data.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 final List<CardViewModel> demoCards = [];
+
 class FunActivity extends StatefulWidget {
   @override
   _FunActivityState createState() => new _FunActivityState();
 }
+
 Future sleep1() {
-  return new Future.delayed(const Duration(seconds: 1), () => "1");
+  return new Future.delayed(const Duration(seconds: 2), () => "2");
 }
+
 Future<Post> getProjectDetails() async {
-    Post pt = await fetchPost();
-    CardViewModel cardViewModel = new CardViewModel();
-    cardViewModel.joke= pt.joke;
-    demoCards.add(cardViewModel);
+  Post pt = await fetchPost();
+  CardViewModel cardViewModel = new CardViewModel();
+  cardViewModel.joke = pt.joke;
+  demoCards.add(cardViewModel);
 }
 
 class _FunActivityState extends State<FunActivity> {
   double scrollPercent = 0.0;
+
   @override
   void initState() {
     super.initState();
     demoCards.clear();
-    for(int i=0;i<4;i++)
-      getProjectDetails();
+    for (int i = 0; i < 4; i++) getProjectDetails();
   }
+
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
@@ -44,21 +47,16 @@ class _FunActivityState extends State<FunActivity> {
           ),
 
           // Cards
-          new FutureBuilder<Post>( future: fetchPost(),
+          new FutureBuilder<Post>(
+              future: fetchPost(),
               builder: (context, snapshot) {
-               if (snapshot.hasData) {
-                  return  new Expanded(
+                if (snapshot.hasData) {
+                  return new Expanded(
                     child: new CardFlipper(
                         cards: demoCards,
                         onScroll: (double scrollPercent) {
                           setState(() {
                             this.scrollPercent = scrollPercent;
-                            if(scrollPercent>0.6) {
-                              Navigator.pop(context);
-                              sleep1();
-                              Navigator.push(context, MaterialPageRoute(
-                                  builder: (context) => FunActivity()));
-                            }
                           });
                         }),
                   );
@@ -68,7 +66,6 @@ class _FunActivityState extends State<FunActivity> {
                 // By default, show a loading spinner
                 return CircularProgressIndicator();
               }),
-
 
           // Scroll Indicator
           new BottomBar(
@@ -80,6 +77,7 @@ class _FunActivityState extends State<FunActivity> {
     );
   }
 }
+
 class CardFlipper extends StatefulWidget {
   final List<CardViewModel> cards;
   final Function onScroll;
@@ -114,7 +112,6 @@ class _CardFlipperState extends State<CardFlipper>
         setState(() {
           scrollPercent = lerpDouble(
               finishScrollStart, finishScrollEnd, finishScrollController.value);
-
           if (widget.onScroll != null) {
             widget.onScroll(scrollPercent);
           }
@@ -152,6 +149,12 @@ class _CardFlipperState extends State<CardFlipper>
     setState(() {
       startDrag = null;
       startDragPercentScroll = null;
+      if (scrollPercent > 0.7) {
+        Navigator.pop(context);
+        sleep1();
+        Navigator.push(
+            context, MaterialPageRoute(builder: (context) => FunActivity()));
+      }
     });
   }
 
@@ -263,9 +266,17 @@ class CardModified extends StatelessWidget {
       children: <Widget>[
         new Card(
           child: Center(
-            child: Text(
-              '${viewModel.joke}',
-              style: TextStyle(color: Colors.black,fontWeight: FontWeight.bold,fontStyle: FontStyle.italic,fontSize: 30.0),
+            child: SingleChildScrollView(
+              child: ListTile(
+                title: Text(
+                  '${viewModel.joke}',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 30.0),
+                ),
+              ),
             ),
           ),
         ),
@@ -329,6 +340,7 @@ class BottomBar extends StatelessWidget {
 class ScrollIndicator extends StatelessWidget {
   final int cardCount;
   final double scrollPercent;
+
   ScrollIndicator({
     this.cardCount,
     this.scrollPercent,

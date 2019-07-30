@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:icare/auth.dart';
 import 'package:icare/root_page.dart';
 void main() {
-  runApp(mainPage());
+  runApp(MainPage());
 }
-class mainPage extends StatelessWidget
+class MainPage extends StatelessWidget
 {
   /*AnimationController _controller;
    Animation<double> _animation;
