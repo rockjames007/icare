@@ -4,39 +4,67 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:icare/personalDetailRequired.dart';
 import 'package:intl/intl.dart';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
+import 'package:icare/menu/menu.dart';
 
 class UserInfoDetail extends StatefulWidget {
   @override
   _UserInfoDetailState createState() => _UserInfoDetailState();
 }
 
+class DobFieldValidator {
+  static String validate(DateTime value) {
+    return value == null ? 'Date of birth can\'t be empty' : null;
+  }
+}
+
+class WeightFieldValidator {
+  static String validate(String value) {
+    if (value.isEmpty)
+      return 'Weight can\'t be empty';
+    else if (double.parse(value) <= 20)
+      return 'Weight can\'t be less than 20kg';
+    else if (double.parse(value) > 150.0)
+      return 'Weight can\'t be more than 150kg';
+    return null;
+  }
+}
+
+class HeightFieldValidator {
+  static String validate(String value) {
+    if (value.isEmpty)
+      return 'Height can\'t be empty';
+    else if (double.parse(value) <= 60)
+      return 'Height can\'t be less than 60cm';
+    else if (double.parse(value) >= 250)
+      return 'Height can\'t be more than 250cm';
+    return null;
+  }
+}
+
 class _UserInfoDetailState extends State<UserInfoDetail> {
   PersonalDetail _personalDetail = new PersonalDetail();
   FirebaseUser _firebaseUser;
+  final dobController = TextEditingController();
   final formKey = GlobalKey<FormState>();
-  List<String> _genders = <String>['', 'Male', 'Female'];
-  String _gender = "";
+  List<String> _genders = <String>['Male', 'Female'];
+  String _gender = "Male";
   bool _load = false;
+
   bool validateAndSave() {
-    setState((){
-      _load=true;
+    setState(() {
+      _load = true;
     });
     final form = formKey.currentState;
     if (form.validate()) {
       form.save();
       return true;
     }
-    setState((){
-      _load=false;
+    setState(() {
+      _load = false;
     });
     return false;
   }
-  void validateAndSubmit() async {
-    if (validateAndSave()) {
 
-
-    }
-  }
   @override
   void initState() {
     super.initState();
@@ -49,11 +77,15 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
 
   @override
   Widget build(BuildContext context) {
-    Widget loadingIndicator =_load? new Container(
-      width: 70.0,
-      height: 70.0,
-      child: new Padding(padding: const EdgeInsets.all(5.0),child: new Center(child: new CircularProgressIndicator())),
-    ):new Container();
+    Widget loadingIndicator = _load
+        ? new Container(
+            width: 70.0,
+            height: 70.0,
+            child: new Padding(
+                padding: const EdgeInsets.all(5.0),
+                child: new Center(child: new CircularProgressIndicator())),
+          )
+        : new Container();
     return Scaffold(
       body: FutureBuilder(
           future: FirebaseAuth.instance.currentUser(),
@@ -63,12 +95,30 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
               return SingleChildScrollView(
                 child: Container(
                   child: Form(
+                    key: formKey,
                     child: Column(
                       children: <Widget>[
-                        _sizedBox(150.0),
+                        _sizedBox(30.0),
+                        ListTile(
+                            title: Text(
+                          "Enter your Personal Details:",
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 30.0),
+                        )),
+                        Divider(),
+                        _sizedBox(20.0),
                         _emailOutput(),
                         _sizedBox(50.0),
                         _dobInput(),
+                        _sizedBox(50.0),
+                        _genderInput(),
+                        _sizedBox(50.0),
+                        _heightInput(),
+                        _sizedBox(50.0),
+                        _weightInput(),
                         _sizedBox(50.0),
                         _submitButton()
                       ],
@@ -99,11 +149,50 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
     );
   }
 
+  Widget _heightInput() {
+    return new ListTile(
+      title: TextFormField(
+        autofocus: false,
+        decoration: new InputDecoration(
+            hintText: 'Height',
+            suffixText: 'cm',
+            icon: new Icon(
+              Icons.accessibility,
+              color: Colors.black,
+            ),
+            border: OutlineInputBorder()),
+        keyboardType: TextInputType.number,
+        validator: HeightFieldValidator.validate,
+        onSaved: (value) => _personalDetail.height = value,
+      ),
+    );
+  }
+
+  Widget _weightInput() {
+    return new ListTile(
+      title: TextFormField(
+        autofocus: false,
+        decoration: new InputDecoration(
+            hintText: 'Weight',
+            suffixText: 'kg',
+            icon: new Icon(
+              Icons.storage,
+              color: Colors.black,
+            ),
+            border: OutlineInputBorder()),
+        keyboardType: TextInputType.number,
+        onSaved: (value) => _personalDetail.weight = value,
+        validator: WeightFieldValidator.validate,
+      ),
+    );
+  }
+
   Widget _dobInput() {
-    final format = DateFormat("dd-MM-yyyy");
+    final format = DateFormat("dd/MM/yyyy");
     return new ListTile(
       title: DateTimeField(
         format: format,
+        readOnly: true,
         onShowPicker: (context, currentValue) {
           return showDatePicker(
               context: context,
@@ -118,6 +207,13 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
               color: Colors.black,
             ),
             border: OutlineInputBorder()),
+        validator: DobFieldValidator.validate,
+        onChanged: (DateTime newValue) {
+          setState(() {
+            _personalDetail.dob = newValue;
+            print(_personalDetail.dob.toString());
+          });
+        },
       ),
     );
   }
@@ -127,7 +223,10 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
       title: new DropdownButtonHideUnderline(
         child: new InputDecorator(
           decoration: const InputDecoration(
-            icon: const Icon(Icons.account_box),
+            icon: const Icon(
+              Icons.account_box,
+              color: Colors.black,
+            ),
             labelText: 'Gender',
           ),
           child: new DropdownButton<String>(
@@ -149,6 +248,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
       ),
     );
   }
+
   Widget _submitButton() {
     return new SizedBox(
       height: 40.0,
@@ -158,7 +258,11 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
         color: Colors.blue,
         child: new Text('Submit',
             style: new TextStyle(fontSize: 15.0, color: Colors.white)),
-        onPressed: validateAndSubmit,
+        onPressed: (){
+          if(validateAndSave())
+            Navigator.push(
+                context, MaterialPageRoute(builder: (context) => Menu()));
+        },
       ),
     );
   }
