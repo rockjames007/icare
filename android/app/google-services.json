@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "254659708058-d1hgbdgolprhnn8d1epkilf7j80l3o0n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "wgs.com.icare",
+            "certificate_hash": "64405162e1631b4c750cd4edc80ce9753e278305"
+          }
+        },
+        {
           "client_id": "254659708058-4odj091p6lne1b5s6kt7d8hijbunq3n2.apps.googleusercontent.com",
           "client_type": 3
         }

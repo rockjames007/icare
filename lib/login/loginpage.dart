@@ -2,13 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:icare/auth.dart';
 
-void main(){
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown
-  ]);
-  runApp(Login());
-}
 class EmailFieldValidator {
   static String validate(String value) {
     return value.isEmpty ? 'Email can\'t be empty' : null;
@@ -55,6 +48,26 @@ class _LoginPageState extends State<Login> {
     });
     return false;
   }
+  void googleLogin() async{
+    setState((){
+      _load=true;
+    });
+    try {
+      String userId = await widget.auth.googleLogin();
+      setState(() {
+        _authHint = 'Signed In\n\nUser id: $userId';
+      });
+      widget.onSignedIn();
+    }
+    catch (e) {
+      setState(() {
+        _authHint = '!Sign In Error , Please check your account';
+        _load=false;
+      });
+      print(e);
+    }
+
+  }
   void validateAndSubmit() async {
     if (validateAndSave()) {
       try {
@@ -96,29 +109,52 @@ class _LoginPageState extends State<Login> {
       child: new Padding(padding: const EdgeInsets.all(5.0),child: new Center(child: new CircularProgressIndicator())),
     ):new Container();
     return Scaffold(
-        resizeToAvoidBottomPadding: false,
-        body: Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(image: AssetImage("assets/backgroundcolor.png"),fit: BoxFit.cover),
-            ),
-            padding: EdgeInsets.all(16.0),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[_sizedBox(50.0),
-                _logo(),
-                _sizedBox(50.0),
-                _emailInput(),
-                _sizedBox(15.0),
-                _passwordInput(),
-                _sizedBox(100.0),
-                _checkErrorInLogin(),
-                _submitButton(),
-                new Align(child: loadingIndicator,alignment: FractionalOffset.center,),
-                ],
-              ),
-            )));
+        body: SingleChildScrollView(
+            child:Container(
+                height: MediaQuery.of(context).size.height,
+                decoration: BoxDecoration(
+                  image: DecorationImage(image: AssetImage("assets/backgroundcolor.png"),fit: BoxFit.cover),
+                ),
+                child:SingleChildScrollView(
+                    child:Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          _sizedBox(50.0),
+                          _logo(),
+                          _sizedBox(50.0),
+                          ListTile(title:_emailInput(),dense: true,),
+                          _sizedBox(20.0),
+                          ListTile(title:_passwordInput(),dense: true,),
+                          ListTile(title:_checkErrorInLogin(),dense: true,),
+                          ListTile(title:_submitButton(),dense: true,),
+                          ListTile(
+                              dense: true,
+                              title:Row(mainAxisAlignment: MainAxisAlignment.center,children: <Widget>[RichText(text: TextSpan(text: "or",style: TextStyle(color: Colors.black,))),])
+                          ),
+                          ListTile(
+                            dense: true,
+                            title:InkWell(
+                              child: Container(
+                                padding: EdgeInsets.only(right: MediaQuery.of(context).size.width/2-50.0,left: MediaQuery.of(context).size.width/2-50.0),
+                                child:Card(
+                                    semanticContainer: true,
+                                    child:Image.asset("assets/googleicon.png",height: 50.0,width: 10.0,),
+                                    clipBehavior: Clip.antiAliasWithSaveLayer
+                                ),
+                              ),
+                              onTap: () {
+                                googleLogin();
+                              },
+                            ),
+                          ),
+                          new Align(child: loadingIndicator,alignment: FractionalOffset.center,),
+                        ],
+                      ),
+                    )))
+        )
+    );
   }
   Widget _emailInput() {
     return new TextFormField(
@@ -158,8 +194,8 @@ class _LoginPageState extends State<Login> {
   }
   Widget _submitButton() {
     return
-      new SizedBox(
-        height: 40.0,
+      new Container(
+        padding: EdgeInsets.only(right: MediaQuery.of(context).size.width/2-160.0,left: MediaQuery.of(context).size.width/2-160.0),
         child:RaisedButton(
           shape: new RoundedRectangleBorder(borderRadius: new BorderRadius.circular(30.0)),
           color: Colors.blue,
@@ -171,7 +207,7 @@ class _LoginPageState extends State<Login> {
   }
   Widget _logo() {
     return new Image(
-      image:AssetImage('assets/xmplarlogo.png'),
+      image:AssetImage('assets/icarelogo.jpg'),
       colorBlendMode: BlendMode.darken,
       width: 150.0,
       height: 150.0,

@@ -30,6 +30,7 @@ dependencies:
   firebase_storage: 1.0.4
   image_picker: 0.4.12+1
   shared_preferences: ^0.4.3
+  google_sign_in: 3.2.4
 
 dev_dependencies:
   flutter_test:
@@ -52,7 +53,8 @@ flutter:
   #  - images/a_dot_burr.jpeg
   #  - images/a_dot_ham.jpeg
   assets:
-    - assets/xmplarlogo.png
+    - assets/icarelogo.jpg
+    - assets/googleicon.png
     - assets/backgroundcolor.png
     - assets/sleepcat.jpg
     - assets/medical.jpg

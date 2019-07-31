@@ -288,6 +288,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
     setState(() {
       _load=false;
     });
+    Navigator.pop(context);
     Navigator.push(
         context, MaterialPageRoute(builder: (context) => Menu()));
   }
@@ -295,14 +296,13 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
     setState(() {
       _load=true;
     });
-    String email,height,weight,gender,dob;
     SharedPreferences _prefs;
     SharedPreferences.getInstance()..then((prefs){setState(()=>_prefs=prefs);
-    _prefs.setString(email, _personalDetail.email);
-    _prefs.setString(height, _personalDetail.height);
-    _prefs.setString(weight,  _personalDetail.weight);
-    _prefs.setString(gender,  _personalDetail.gender);
-    _prefs.setString(dob, _personalDetail.dob.toIso8601String());
+    _prefs.setString("email", _personalDetail.email);
+    _prefs.setString("height", _personalDetail.height);
+    _prefs.setString("weight",  _personalDetail.weight);
+    _prefs.setString("gender",  _personalDetail.gender);
+    _prefs.setString("dob", _personalDetail.dob.toIso8601String());
     } );
   }
 }

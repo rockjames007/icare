@@ -40,14 +40,14 @@ class _LogoAppState extends State<LogoApp> with SingleTickerProviderStateMixin {
                       alignment:Alignment(0.0, 1.5),
                       height: animation.value,
                       width: animation.value,
-                      child:Image.asset("assets/xmplarlogo.png"),
+                      child:Image.asset("assets/icarelogo.jpg"),
                       ),
            Container
            (
              alignment: Alignment(0.0, 1.0),
              height: devicesize.height*.30,
              child: Text(
-                 'KEEP GROWING',
+                 'You Are Your First Priority',
                  textAlign: TextAlign.center,
                  overflow: TextOverflow.clip,
                  textScaleFactor: 1.5,
