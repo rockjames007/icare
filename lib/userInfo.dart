@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:icare/personalDetailRequired.dart';
 import 'package:intl/intl.dart';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
 import 'package:icare/menu/menu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserInfoDetail extends StatefulWidget {
   @override
@@ -47,7 +48,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   final dobController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   List<String> _genders = <String>['Male', 'Female'];
-  String _gender = "Male";
+
   bool _load = false;
 
   bool validateAndSave() {
@@ -69,7 +70,9 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   void initState() {
     super.initState();
     try {
-      FirebaseAuth.instance.currentUser().then((_firebaseUser) => setState(() {
+      _personalDetail.gender = 'Male';
+      FirebaseAuth.instance.currentUser().then((_firebaseUser) =>
+          setState(() {
             this._firebaseUser = _firebaseUser;
           }));
     } catch (e) {}
@@ -79,12 +82,12 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   Widget build(BuildContext context) {
     Widget loadingIndicator = _load
         ? new Container(
-            width: 70.0,
-            height: 70.0,
-            child: new Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: new Center(child: new CircularProgressIndicator())),
-          )
+      width: 70.0,
+      height: 70.0,
+      child: new Padding(
+          padding: const EdgeInsets.all(5.0),
+          child: new Center(child: new CircularProgressIndicator())),
+    )
         : new Container();
     return Scaffold(
       body: FutureBuilder(
@@ -101,13 +104,13 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
                         _sizedBox(30.0),
                         ListTile(
                             title: Text(
-                          "Enter your Personal Details:",
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontStyle: FontStyle.italic,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 30.0),
-                        )),
+                              "Enter your Personal Details:",
+                              style: TextStyle(
+                                  color: Colors.black,
+                                  fontStyle: FontStyle.italic,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 30.0),
+                            )),
                         Divider(),
                         _sizedBox(20.0),
                         _emailOutput(),
@@ -211,7 +214,6 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
         onChanged: (DateTime newValue) {
           setState(() {
             _personalDetail.dob = newValue;
-            print(_personalDetail.dob.toString());
           });
         },
       ),
@@ -230,11 +232,11 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
             labelText: 'Gender',
           ),
           child: new DropdownButton<String>(
-            value: _gender,
+            value: _personalDetail.gender,
             isDense: true,
             onChanged: (String newValue) {
               setState(() {
-                _gender = newValue;
+                _personalDetail.gender = newValue;
               });
             },
             items: _genders.map((String value) {
@@ -258,10 +260,10 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
         color: Colors.blue,
         child: new Text('Submit',
             style: new TextStyle(fontSize: 15.0, color: Colors.white)),
-        onPressed: (){
-          if(validateAndSave())
-            Navigator.push(
-                context, MaterialPageRoute(builder: (context) => Menu()));
+        onPressed: () {
+          if (validateAndSave()) {
+            saveData(_firebaseUser.uid.toString());
+          }
         },
       ),
     );
@@ -270,4 +272,38 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   Widget _sizedBox(_height) {
     return new SizedBox(height: _height);
   }
+
+  void saveData(String uid) async {
+          Firestore.instance.collection("users").document(uid).collection('personalinfo').document('basic').setData({
+            'gender': _personalDetail.gender,
+            "email": _personalDetail.email,
+            "height": _personalDetail.height,
+            "weight": _personalDetail.weight,
+            "dob": _personalDetail.dob.toIso8601String()
+          }).whenComplete(_whenCompleteTransaction);
+  }
+
+  void _whenCompleteTransaction(){
+    storeDate();
+    setState(() {
+      _load=false;
+    });
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => Menu()));
+  }
+  void storeDate() async{
+    setState(() {
+      _load=true;
+    });
+    String email,height,weight,gender,dob;
+    SharedPreferences _prefs;
+    SharedPreferences.getInstance()..then((prefs){setState(()=>_prefs=prefs);
+    _prefs.setString(email, _personalDetail.email);
+    _prefs.setString(height, _personalDetail.height);
+    _prefs.setString(weight,  _personalDetail.weight);
+    _prefs.setString(gender,  _personalDetail.gender);
+    _prefs.setString(dob, _personalDetail.dob.toIso8601String());
+    } );
+  }
 }
+
