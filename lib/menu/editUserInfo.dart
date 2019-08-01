@@ -3,13 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:icare/personalDetailRequired.dart';
 import 'package:intl/intl.dart';
 import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
-import 'package:icare/menu/menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class UserInfoDetail extends StatefulWidget {
+class EditUserInfoDetail extends StatefulWidget {
   @override
-  _UserInfoDetailState createState() => _UserInfoDetailState();
+  _EditUserInfoDetailState createState() => _EditUserInfoDetailState();
 }
 
 class DobFieldValidator {
@@ -42,10 +41,10 @@ class HeightFieldValidator {
   }
 }
 
-class _UserInfoDetailState extends State<UserInfoDetail> {
+class _EditUserInfoDetailState extends State<EditUserInfoDetail> {
+  SharedPreferences _prefs;
   PersonalDetail _personalDetail = new PersonalDetail();
   FirebaseUser _firebaseUser;
-  final dobController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   List<String> _genders = <String>['Male', 'Female'];
 
@@ -69,32 +68,47 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   @override
   void initState() {
     super.initState();
+    getUserDataSharedPreference();
     try {
-      _personalDetail.gender = 'Male';
-      FirebaseAuth.instance.currentUser().then((_firebaseUser) =>
-          setState(() {
+      FirebaseAuth.instance.currentUser().then((_firebaseUser) => setState(() {
             this._firebaseUser = _firebaseUser;
           }));
     } catch (e) {}
+  }
+
+  void getUserDataSharedPreference() async {
+    SharedPreferences.getInstance()
+      ..then((prefs) {
+        setState(() => _prefs = prefs);
+        _personalDetail.gender = _prefs.get("gender");
+        _personalDetail.height = _prefs.get("height");
+        _personalDetail.weight = _prefs.get("weight");
+        _personalDetail.dob = DateTime.parse(_prefs.get("dob"));
+      });
   }
 
   @override
   Widget build(BuildContext context) {
     Widget loadingIndicator = _load
         ? new Container(
-      width: 70.0,
-      height: 70.0,
-      child: new Padding(
-          padding: const EdgeInsets.all(5.0),
-          child: new Center(child: new CircularProgressIndicator())),
-    )
+            width: 70.0,
+            height: 70.0,
+            child: new Padding(
+                padding: const EdgeInsets.all(5.0),
+                child: new Center(child: new CircularProgressIndicator())),
+          )
         : new Container();
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Edit Personal Details:",style: TextStyle(color: Colors.black),),
+        backgroundColor: Colors.white,
+        iconTheme: IconThemeData(color: Colors.black),
+        centerTitle: true,
+      ),
       body: FutureBuilder(
           future: FirebaseAuth.instance.currentUser(),
           builder: (context, AsyncSnapshot<FirebaseUser> snapshot) {
             if (snapshot.hasData) {
-              _personalDetail.email = _firebaseUser.email;
               return SingleChildScrollView(
                 child: Container(
                   child: Form(
@@ -102,19 +116,6 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
                     child: Column(
                       children: <Widget>[
                         _sizedBox(30.0),
-                        ListTile(
-                            title: Text(
-                              "Enter your Personal Details:",
-                              style: TextStyle(
-                                  color: Colors.black,
-                                  fontStyle: FontStyle.italic,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 30.0),
-                            )),
-                        Divider(),
-                        _sizedBox(20.0),
-                        _emailOutput(),
-                        _sizedBox(50.0),
                         _dobInput(),
                         _sizedBox(50.0),
                         _genderInput(),
@@ -136,23 +137,6 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
     );
   }
 
-  Widget _emailOutput() {
-    return new ListTile(
-      title: TextFormField(
-        autofocus: false,
-        readOnly: true,
-        decoration: new InputDecoration(
-            hintText: 'Email',
-            icon: new Icon(
-              Icons.mail,
-              color: Colors.black,
-            ),
-            border: OutlineInputBorder()),
-        initialValue: _personalDetail.email,
-      ),
-    );
-  }
-
   Widget _heightInput() {
     return new ListTile(
       title: TextFormField(
@@ -167,6 +151,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
             border: OutlineInputBorder()),
         keyboardType: TextInputType.number,
         validator: HeightFieldValidator.validate,
+        initialValue: _personalDetail.height,
         onSaved: (value) => _personalDetail.height = value,
       ),
     );
@@ -185,6 +170,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
             ),
             border: OutlineInputBorder()),
         keyboardType: TextInputType.number,
+        initialValue: _personalDetail.weight,
         onSaved: (value) => _personalDetail.weight = value,
         validator: WeightFieldValidator.validate,
       ),
@@ -212,6 +198,7 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
             ),
             border: OutlineInputBorder()),
         validator: DobFieldValidator.validate,
+        initialValue: _personalDetail.dob,
         onChanged: (DateTime newValue) {
           setState(() {
             _personalDetail.dob = newValue;
@@ -275,37 +262,41 @@ class _UserInfoDetailState extends State<UserInfoDetail> {
   }
 
   void saveData(String uid) async {
-          Firestore.instance.collection("users").document(uid).collection('personalinfo').document('basic').setData({
-            'gender': _personalDetail.gender,
-            "email": _personalDetail.email,
-            "height": _personalDetail.height,
-            "weight": _personalDetail.weight,
-            "dob": _personalDetail.dob.toIso8601String()
-          }).whenComplete(_whenCompleteTransaction);
+    Firestore.instance
+        .collection("users")
+        .document(uid)
+        .collection('personalinfo')
+        .document('basic')
+        .updateData({
+      'gender': _personalDetail.gender,
+      "height": _personalDetail.height,
+      "weight": _personalDetail.weight,
+      "dob": _personalDetail.dob.toIso8601String()
+    }).whenComplete(_whenCompleteTransaction);
   }
 
-  void _whenCompleteTransaction(){
+  void _whenCompleteTransaction() {
     storeDate();
     setState(() {
-      _load=false;
+      _load = false;
     });
     Navigator.pop(context);
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => Menu()));
   }
-  void storeDate() async{
+
+  void storeDate() async {
     setState(() {
-      _load=true;
+      _load = true;
     });
     SharedPreferences _prefs;
-    SharedPreferences.getInstance()..then((prefs){setState(()=>_prefs=prefs);
-    _prefs.setString("email", _personalDetail.email);
-    _prefs.setString("height", _personalDetail.height);
-    _prefs.setString("weight",  _personalDetail.weight);
-    _prefs.setString("gender",  _personalDetail.gender);
-    _prefs.setString("dob", _personalDetail.dob.toIso8601String());
-    _prefs.setString("age", calculateAge(_personalDetail.dob));
-    } );
+    SharedPreferences.getInstance()
+      ..then((prefs) {
+        setState(() => _prefs = prefs);
+        _prefs.setString("height", _personalDetail.height);
+        _prefs.setString("weight", _personalDetail.weight);
+        _prefs.setString("gender", _personalDetail.gender);
+        _prefs.setString("age", calculateAge(_personalDetail.dob));
+        _prefs.setString("dob", _personalDetail.dob.toIso8601String());
+      });
   }
   calculateAge(DateTime birthDate) {
     DateTime currentDate = DateTime.now();

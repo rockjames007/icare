@@ -11,9 +11,10 @@ class PersonalDetail {
   String weight;
   String gender;
   String height;
+  String age;
   DateTime dob;
 
-  PersonalDetail({this.email, this.weight, this.gender, this.height,this.dob});
+  PersonalDetail({this.email, this.weight, this.gender, this.height,this.age,this.dob});
 }
 class PersonalDataRequired extends StatefulWidget {
   @override
@@ -62,6 +63,7 @@ class _PersonalDataRequiredState extends State<PersonalDataRequired> {
         _detail.weight = documentSnapshot.data['weight'];
         _detail.gender = documentSnapshot.data['gender'];
         _detail.dob = DateTime.parse(documentSnapshot.data['dob']);
+        _detail.age=calculateAge( _detail.dob);
       }
       else{
         Navigator.push(
@@ -84,7 +86,22 @@ class _PersonalDataRequiredState extends State<PersonalDataRequired> {
     }
     );
   }
-
+  calculateAge(DateTime birthDate) {
+    DateTime currentDate = DateTime.now();
+    int age = currentDate.year - birthDate.year;
+    int month1 = currentDate.month;
+    int month2 = birthDate.month;
+    if (month2 > month1) {
+      age--;
+    } else if (month1 == month2) {
+      int day1 = currentDate.day;
+      int day2 = birthDate.day;
+      if (day2 > day1) {
+        age--;
+      }
+    }
+    return age.toString();
+  }
   @override
   Widget build(BuildContext context) {
     Widget loadingIndicator =_load? new Container(
@@ -105,6 +122,7 @@ class _PersonalDataRequiredState extends State<PersonalDataRequired> {
     prefs.setString("weight",  _detail.weight);
     prefs.setString("gender",  _detail.gender);
     prefs.setString("dob", _detail.dob.toIso8601String());
+    prefs.setString("age", _detail.age);
   }
 }
 

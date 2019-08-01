@@ -1,22 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:datetime_picker_formfield/datetime_picker_formfield.dart';
-import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 class HydrateTracker extends StatefulWidget {
   @override
   _HydrateTrackerState createState() => _HydrateTrackerState();
 }
 
 class _HydrateTrackerState extends State<HydrateTracker> {
-  final format = DateFormat("HH:mm");
+  SharedPreferences _prefs;
+  String waterRequire;
+  @override
+  void initState() {
+    super.initState();
+    getUserDataSharedPreference();
+  }
+
+  void getUserDataSharedPreference() async {
+    SharedPreferences.getInstance()
+      ..then((prefs) {
+        setState(() => _prefs = prefs);
+        if (_prefs.get("gender") == "Male")
+          waterRequire = (double.parse(_prefs.get("weight"))/30.0)
+              .toStringAsFixed(2);
+        else
+          waterRequire = (double.parse(_prefs.get("weight"))/30.0)
+              .toStringAsFixed(2);
+      });
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(244, 236, 247, 1.0),
+      backgroundColor:Colors.lightBlueAccent,
       body: CustomScrollView(
         slivers: <Widget>[
           SliverAppBar(
             pinned: true,
-            expandedHeight: 150.0,
+            expandedHeight: 100.0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 'Hydrate'
@@ -32,29 +50,48 @@ class _HydrateTrackerState extends State<HydrateTracker> {
                 child: Column(
                   children: <Widget>[
                     Card(
-                      color: Color.fromRGBO(178, 235, 242, 1.0),
-                      child: ListTile(
-                        title: Text("Bed Time"),
-                        subtitle: Text(
-                          "0:18 min", style: TextStyle(fontSize: 20.0),),
+                      color:Colors.white,
+                      child: Table(
+                        border: TableBorder.all(width: 1.0, color: Colors.black),
+                        children: [
+                          TableRow(children: [
+                            TableCell(
+                                verticalAlignment:
+                                TableCellVerticalAlignment.middle,
+                                child: RichText(
+                                  text: TextSpan(
+                                      text: "Litres of Water needed to drink per day",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold,
+                                      )),
+                                  textAlign: TextAlign.center,
+                                )),
+                            TableCell(
+                                verticalAlignment:
+                                TableCellVerticalAlignment.middle,
+                                child: RichText(
+                                  text: TextSpan(
+                                      text: waterRequire +" litre",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold,
+                                      )),
+                                  textAlign: TextAlign.center,
+                                )),
+                          ]),
+                        ],
                       ),
                     ),
-                    Card(
-                        color: Color.fromRGBO(178, 235, 242, 1.0),
-                        child: ListTile(
-                          title: Text("Sleep Time"),
-                          subtitle: DateTimeField(
-                            format: format,
-                            onShowPicker: (context, currentValue) async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-                              );
-                              return DateTimeField.convert(time);
-                            },
-                          ),
-                        )
-                    )],
+                    Container(
+                      height: 650.0,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(image: NetworkImage("https://i.pinimg.com/originals/ae/28/51/ae2851bf3fc4d8fda78c28307a530a2d.png"),fit: BoxFit.fill)
+                      ),
+                    )
+                  ],
                 ),
               ))
         ],

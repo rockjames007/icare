@@ -16,7 +16,7 @@ class _MedicalTrackerState extends State<MedicalTracker> {
         slivers: <Widget>[
           SliverAppBar(
             pinned: true,
-            expandedHeight: 150.0,
+            expandedHeight: 100.0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 'Medical',
@@ -33,30 +33,13 @@ class _MedicalTrackerState extends State<MedicalTracker> {
               child: SingleChildScrollView(
                 child: Column(
                   children: <Widget>[
-                    Card(
-                      color: Color.fromRGBO(178, 235, 242, 1.0),
-                      child: ListTile(
-                        title: Text("Medical"),
-                        subtitle: Text(
-                          "0:18 min", style: TextStyle(fontSize: 20.0),),
+                    Container(
+                      height: 660,
+                      decoration: BoxDecoration(
+                          image: DecorationImage(image: NetworkImage("https://livelovefruit.com/wp-content/uploads/2017/10/JuiceCures.png"),fit: BoxFit.fill)
                       ),
-                    ),
-                    Card(
-                        color: Color.fromRGBO(178, 235, 242, 1.0),
-                        child: ListTile(
-                          title: Text("Sleep Time"),
-                          subtitle: DateTimeField(
-                            format: format,
-                            onShowPicker: (context, currentValue) async {
-                              final time = await showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
-                              );
-                              return DateTimeField.convert(time);
-                            },
-                          ),
-                        )
-                    )],
+                    )
+                  ],
                 ),
               ))
         ],

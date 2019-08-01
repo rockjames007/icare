@@ -11,12 +11,12 @@ class _SleepTrackerState extends State<SleepTracker> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromRGBO(244, 236, 247, 1.0),
+      backgroundColor: Colors.black,
       body: CustomScrollView(
         slivers: <Widget>[
           SliverAppBar(
             pinned: true,
-            expandedHeight: 150.0,
+            expandedHeight: 100.0,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 'Sleep',
@@ -34,17 +34,24 @@ class _SleepTrackerState extends State<SleepTracker> {
             child: Column(
               children: <Widget>[
                 Card(
-                  color: Color.fromRGBO(178, 235, 242, 1.0),
-                  child: ListTile(
-                    title: Text("Bed Time"),
-                    subtitle: Text(
-                      "0:18 min", style: TextStyle(fontSize: 20.0),),
-                  ),
+                  color: Colors.blueGrey,
+                    child: ListTile(
+                      title: Text("Sleep Time"),
+                      subtitle: DateTimeField(
+                        format: format,
+                        onShowPicker: (context, currentValue) async {
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(currentValue ?? DateTime.now()),
+                          );
+                          return DateTimeField.convert(time);
+                        },
+                      ),
+                    )
                 ),
                 Card(
-                  color: Color.fromRGBO(178, 235, 242, 1.0),
                   child: ListTile(
-                    title: Text("Sleep Time"),
+                    title: Text("Wake up Time"),
                     subtitle: DateTimeField(
                       format: format,
                       onShowPicker: (context, currentValue) async {
@@ -55,7 +62,14 @@ class _SleepTrackerState extends State<SleepTracker> {
                         return DateTimeField.convert(time);
                       },
                     ),
-                )
+                ),
+
+                ),
+                Container(
+                  height: 550.0,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(image: NetworkImage("https://thumbnails-visually.netdna-ssl.com/10-tips-for-better-sleep_51f6d5c81a107_w1500.jpg"),fit: BoxFit.fill)
+                  ),
                 )],
             ),
           ))
